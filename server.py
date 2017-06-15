@@ -17,8 +17,8 @@ def create():
     r_email=request.form['email']
     r_password=request.form['password']
     c_password=request.form['confirm-password']
-    session['salt'] =  binascii.b2a_hex(os.urandom(15))
-    hashed_pw = md5.new(r_password + session['salt']).hexdigest()
+    salt =  binascii.b2a_hex(os.urandom(15))
+    hashed_pw = md5.new(r_password + salt).hexdigest()
     error_count=0
     empty_field_error="The {} field can't be empty"
     EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$')
@@ -51,15 +51,16 @@ def create():
     print error_count
     if error_count==0:
         flash("You have signed up succesfully",'green')
-        query='INSERT INTO users (first_name,last_name,email,password,created_at,updated_at)VALUES (:first_name,:last_name,:email,:password,now(),now())'
+        query='INSERT INTO users (first_name,last_name,email,password,created_at,updated_at,salt)VALUES (:first_name,:last_name,:email,:password,now(),now(),:salt)'
         data={
             'first_name':f_name,
             'last_name':l_name,
             'email':r_email,
             'password':hashed_pw,
+            'salt': salt
         }
         mysql.query_db(query, data)
-        return redirect('/')
+        return redirect('/show')
     else:
         return redirect('/sign_up')
 @app.route('/show')
@@ -80,27 +81,26 @@ def show():
 
 @app.route('/login', methods=['POST'])
 def login():
-    try:
-        r_email=request.form['email']
-        r_password=request.form['password']
-        hashed_pw = md5.new(r_password + session['salt']).hexdigest()
-        query='SELECT u.first_name AS first_name, m.message AS message, c.comment AS comment, m.user_id AS user_id, m.id AS message_id, c.message_id FROM users u LEFT JOIN messages m ON u.id=m.user_id LEFT JOIN comments c ON m.id=c.message_id WHERE u.password=:password AND u.email=:email'
-        data={
-            'email': r_email,
-            'password': hashed_pw
-        }
-        session['query']=mysql.query_db(query,data)
-
-        if len(session['query'])<1:
-            flash("Invalid email of password", 'red')
-            return redirect('/')
-        else:
+    r_email=request.form['email']
+    r_password=request.form['password']
+    query='SELECT u.first_name AS first_name,u.password, m.message AS message, c.comment AS comment, m.user_id AS user_id, m.id AS message_id, c.message_id,u.salt FROM users u LEFT JOIN messages m ON u.id=m.user_id LEFT JOIN comments c ON m.id=c.message_id WHERE u.email=:email'
+    data={
+        'email': r_email,
+    }
+    session['query']=mysql.query_db(query,data)
+    print session['query']
+    if len(session['query'])<1:
+        flash("Invalid email", 'red')
+        return redirect('/')
+    else:
+        hashed_pw = md5.new(r_password + session['query'][0]['salt']).hexdigest()
+        if hashed_pw==session['query'][0]['password']:
             session['user_id']=session['query'][0]['user_id']
             print session['user_id']
             session['status']="loggedin"
-            return redirect('/login')
-    except:
-        return redirect('/sign_up')
+            return redirect('/show')
+    # except:
+    #     return redirect('/')
 @app.route('/sign_up')
 def sign_up():
     return render_template('sign_up.html')
