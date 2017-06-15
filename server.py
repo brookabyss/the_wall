@@ -1,7 +1,6 @@
 from flask import Flask, render_template,redirect,flash,request,session
 from mysqlconnection import MySQLConnector
-import os, binascii
-import re
+import os, binascii,re,md5
 app=Flask(__name__)
 app.secret_key='123'
 mysql=MySQLConnector(app,'Wall')
@@ -81,26 +80,27 @@ def show():
 
 @app.route('/login', methods=['POST'])
 def login():
-    print request.form
-    r_email=request.form['email']
-    r_password=request.form['password']
-    hashed_pw = md5.new(r_password + session['salt']).hexdigest()
-    query='SELECT u.first_name AS first_name, m.message AS message, c.comment AS comment, m.user_id AS user_id, m.id AS message_id, c.message_id FROM users u LEFT JOIN messages m ON u.id=m.user_id LEFT JOIN comments c ON m.id=c.message_id WHERE u.password=:password AND u.email=:email'
-    data={
-        'email': r_email,
-        'password': hashed_pw
-    }
-    session['query']=mysql.query_db(query,data)
+    try:
+        r_email=request.form['email']
+        r_password=request.form['password']
+        hashed_pw = md5.new(r_password + session['salt']).hexdigest()
+        query='SELECT u.first_name AS first_name, m.message AS message, c.comment AS comment, m.user_id AS user_id, m.id AS message_id, c.message_id FROM users u LEFT JOIN messages m ON u.id=m.user_id LEFT JOIN comments c ON m.id=c.message_id WHERE u.password=:password AND u.email=:email'
+        data={
+            'email': r_email,
+            'password': hashed_pw
+        }
+        session['query']=mysql.query_db(query,data)
 
-    if len(session['query'])<1:
-        flash("Invalid email of password", 'red')
-        return redirect('/')
-    else:
-        session['user_id']=session['query'][0]['user_id']
-        print session['user_id']
-        session['status']="loggedin"
-        return redirect('/show')
-
+        if len(session['query'])<1:
+            flash("Invalid email of password", 'red')
+            return redirect('/')
+        else:
+            session['user_id']=session['query'][0]['user_id']
+            print session['user_id']
+            session['status']="loggedin"
+            return redirect('/login')
+    except:
+        return redirect('/sign_up')
 @app.route('/sign_up')
 def sign_up():
     return render_template('sign_up.html')
