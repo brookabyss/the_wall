@@ -11,9 +11,16 @@
       Last Name:<input type="text" name="last_name" value=""><br>
       Email: <input type="text" name="email" value=""><br>
       Password:<input type="password" name="password" value=""><br>
-      Confirm Password:<input type="password" name="c_password" value=""><br>
+      Confirm Password:<input type="password" name="confirm-password" value=""><br>
       <input type="submit" name="submit" value="Create Account">
       <a href="/">back</a>
+      {% with messages= get_flashed_messages(with_categories=true)%}
+      {%for message in messages%}
+        {%if message[0]!='green'%}
+        <p>{{message[1]}}</p>
+        {% endif %}
+      {% endfor %}
+      {% endwith %}
     </form>
   </body>
 </html>

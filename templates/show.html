@@ -9,10 +9,38 @@
     <div class="wrapper">
       <nav>
         <h1>Coding Dojo Wall</h1>
-        <p>Welcome {}</p>
-        <a href="sign_up.html">Log Off</a>
+        <p>Welcome</p>
+        <form class="" action="/logout" method="get">
+          <input type="submit" name="logout" value="Logout">
+        </form>
       </nav>
-
+        <form class="message" action="/createmessage" method="post">
+          <h2>Post a message</h2><br>
+          <textarea name="message" rows="8" cols="80"></textarea>
+          <input type="submit" name="submit" value="Post a Message">
+        </form>
+        {% for q in session['query'] %}
+        {%if q['message']!=None%}
+        <h2>{{q['first_name']+" "+q['last_name']}}</h2>
+        <h2>{{q['created_at']}}</h2>
+          <div class="message">
+            <p clss=m"">{{q['message']}}</p>
+            {% for k in session['query2']%}
+            {% if q['m_id']==k['message_id'] %}
+            <p>{{k['first_name']+" "+k['last_name']}}</p>
+            <p>{{k['created_at']}}</p>
+              <p> {{k['comment']}}</p>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <form class="comment" action="/creatcomment" method="post">
+            <input type="hidden" name="message_id" value={{q['m_id']}}>
+            <h4>Post a comment</h4><br>
+            <textarea name="comment" rows="5" cols="40"></textarea>
+            <input type="submit" name="submit" value="Post a comment">
+          </form>
+          {% endif %}
+        {% endfor %}
     </div>
   </body>
 </html>
